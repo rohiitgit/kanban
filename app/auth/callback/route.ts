@@ -16,33 +16,59 @@ export async function GET(request: Request) {
     const { error } = await supabase.auth.exchangeCodeForSession(code)
 
     if (!error) {
-      // Check if there's a pending role stored (from login page)
-      // Note: This will be read from cookie/storage on client-side
-      // For server-side, we'll use a default role of 'user'
-      // The client will update this via AuthContext after first login
-
-      // Get the current user to update their metadata
+      // Get the current user
       const { data: { user } } = await supabase.auth.getUser()
 
-      // Only set role if not already set
-      if (user && !user.user_metadata?.role) {
-        await supabase.auth.updateUser({
-          data: {
-            role: 'user', // Default role, can be changed later
-          }
-        })
+      if (!user || !user.email) {
+        // No user found or no email - redirect to error
+        return NextResponse.redirect(`${origin}/auth/auth-code-error`)
       }
 
-      const forwardedHost = request.headers.get('x-forwarded-host') // original origin before load balancer
+      // Check if user has a profile (which means they were invited)
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('role, status')
+        .eq('id', user.id)
+        .single()
+
+      // If no profile exists, check if there's a valid invitation
+      if (!profile) {
+        const { data: invitation } = await supabase
+          .from('invitations')
+          .select('*')
+          .eq('email', user.email)
+          .in('status', ['pending', 'accepted'])
+          .single()
+
+        if (!invitation) {
+          // No invitation found - sign them out and redirect to access denied
+          await supabase.auth.signOut()
+          return NextResponse.redirect(`${origin}/auth/access-denied`)
+        }
+
+        // Invitation exists but no profile yet
+        // The trigger should create it, but if it didn't, redirect to setup
+        return NextResponse.redirect(`${origin}/auth/set-password`)
+      }
+
+      // Check if profile is inactive or suspended
+      if (profile.status !== 'active') {
+        await supabase.auth.signOut()
+        return NextResponse.redirect(`${origin}/auth/access-denied?reason=inactive`)
+      }
+
+      // User is invited and has a profile - redirect based on role
+      const redirectPath = profile.role === 'admin' ? '/admin' : '/user'
+
+      const forwardedHost = request.headers.get('x-forwarded-host')
       const isLocalEnv = process.env.NODE_ENV === 'development'
 
       if (isLocalEnv) {
-        // we can be sure that there is no load balancer in between, so no need to watch for X-Forwarded-Host
-        return NextResponse.redirect(`${origin}${next}`)
+        return NextResponse.redirect(`${origin}${redirectPath}`)
       } else if (forwardedHost) {
-        return NextResponse.redirect(`https://${forwardedHost}${next}`)
+        return NextResponse.redirect(`https://${forwardedHost}${redirectPath}`)
       } else {
-        return NextResponse.redirect(`${origin}${next}`)
+        return NextResponse.redirect(`${origin}${redirectPath}`)
       }
     }
   }

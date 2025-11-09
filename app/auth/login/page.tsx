@@ -9,7 +9,6 @@ import { createClient } from '@/utils/supabase/client';
 export default function LoginPage() {
     const { isAuthenticated, user } = useAuth();
     const router = useRouter();
-    const [role, setRole] = useState<'user' | 'admin'>('user');
     const [isLoading, setIsLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const supabase = createClient();
@@ -30,13 +29,10 @@ export default function LoginPage() {
             setIsLoading(true);
             setError(null);
 
-            // Store selected role in localStorage to set after OAuth callback
-            localStorage.setItem('pending_role', role);
-
             const { error } = await supabase.auth.signInWithOAuth({
                 provider: 'google',
                 options: {
-                    redirectTo: `${window.location.origin}/auth/callback?next=${role === 'admin' ? '/admin' : '/user'}`,
+                    redirectTo: `${window.location.origin}/auth/callback`,
                     queryParams: {
                         access_type: 'offline',
                         prompt: 'consent',
@@ -79,36 +75,16 @@ export default function LoginPage() {
                         </div>
                     )}
 
-                    {/* Role Selection */}
-                    <div className="mb-6">
-                        <label className="block text-sm font-semibold text-slate-900 mb-3">Select Your Role</label>
-                        <div className="grid grid-cols-2 gap-3">
-                            <button
-                                type="button"
-                                onClick={() => setRole('user')}
-                                disabled={isLoading}
-                                className={`p-4 rounded-lg border-2 font-medium transition-all flex flex-col items-center gap-2 ${
-                                    role === 'user'
-                                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                                        : 'border-slate-300 bg-slate-50 text-slate-600 hover:border-slate-400 hover:bg-slate-100'
-                                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <Users className="w-5 h-5" />
-                                <span className="text-xs md:text-sm">User</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setRole('admin')}
-                                disabled={isLoading}
-                                className={`p-4 rounded-lg border-2 font-medium transition-all flex flex-col items-center gap-2 ${
-                                    role === 'admin'
-                                        ? 'border-blue-500 bg-blue-50 text-blue-600'
-                                        : 'border-slate-300 bg-slate-50 text-slate-600 hover:border-slate-400 hover:bg-slate-100'
-                                } ${isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                            >
-                                <Shield className="w-5 h-5" />
-                                <span className="text-xs md:text-sm">Admin</span>
-                            </button>
+                    {/* Invite-Only Notice */}
+                    <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-lg">
+                        <div className="flex gap-3">
+                            <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
+                            <div>
+                                <p className="font-semibold text-slate-900 text-sm mb-1">Invite-Only Access</p>
+                                <p className="text-slate-600 text-xs">
+                                    This application requires an invitation from an administrator. If you have been invited, sign in with your Google account below.
+                                </p>
+                            </div>
                         </div>
                     </div>
 
@@ -148,31 +124,11 @@ export default function LoginPage() {
                         )}
                     </button>
 
-                    {/* Role Info Card */}
-                    <div className="mt-7 p-4 bg-slate-50 border border-slate-200 rounded-lg text-sm">
-                        {role === 'user' ? (
-                            <div className="flex gap-3">
-                                <Users className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="font-semibold text-slate-900 mb-1">User Mode</p>
-                                    <p className="text-slate-600 text-xs">Create and manage your own kanban boards. Admins can view your progress.</p>
-                                </div>
-                            </div>
-                        ) : (
-                            <div className="flex gap-3">
-                                <Shield className="w-5 h-5 text-blue-600 flex-shrink-0 mt-0.5" />
-                                <div>
-                                    <p className="font-semibold text-slate-900 mb-1">Admin Mode</p>
-                                    <p className="text-slate-600 text-xs">Manage users and view all kanban boards. You have full control and visibility.</p>
-                                </div>
-                            </div>
-                        )}
-                    </div>
                 </div>
 
                 {/* Footer */}
                 <p className="text-center text-slate-500 text-xs mt-6">
-                    Powered by Supabase • Secured with Google OAuth
+                    Invite-only access • Powered by Supabase
                 </p>
             </div>
         </div>
