@@ -4,7 +4,8 @@ import React, { useState, useLayoutEffect } from 'react';
 import { useAuth } from '@/lib/context/AuthContext';
 import { Board as BoardType, User as UserType } from '@/lib/types';
 import Board from '@/components/Board';
-import { LogOut, Trash2 } from 'lucide-react';
+import InviteUser from '@/components/InviteUser';
+import { LogOut, Trash2, UserPlus } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 
 export default function AdminPage() {
@@ -64,10 +65,23 @@ export default function AdminPage() {
         return null;
     });
 
+    const [showInviteModal, setShowInviteModal] = useState(false);
+
     useLayoutEffect(() => {
-        if (!isAdmin) {
-            router.push('/auth/login');
+        let mounted = true;
+        let redirecting = false;
+
+        if (!isAdmin && !redirecting) {
+            redirecting = true;
+            if (mounted) {
+                router.push('/auth/login');
+            }
         }
+
+        return () => {
+            mounted = false;
+            redirecting = false;
+        };
     }, [isAdmin, router]);
 
     const handleDeleteUser = (userId: string) => {
@@ -105,6 +119,28 @@ export default function AdminPage() {
         localStorage.setItem(`kanban_boards_${userId}`, JSON.stringify(updatedBoards));
     };
 
+    const handleInviteUser = async (email: string, role: 'user' | 'admin') => {
+        try {
+            const response = await fetch('/api/admin/invite', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ email, role }),
+            });
+
+            const data = await response.json();
+
+            if (!response.ok) {
+                throw new Error(data.error || 'Failed to send invitation');
+            }
+
+            return data;
+        } catch (error: any) {
+            throw new Error(error.message || 'Failed to send invitation');
+        }
+    };
+
     if (!isAdmin) {
         return null;
     }
@@ -123,9 +159,8 @@ export default function AdminPage() {
                         <p className="text-sm text-slate-600 mt-1">Welcome, {user?.name}</p>
                     </div>
                     <button
-                        onClick={() => {
-                            logout();
-                            router.push('/auth/login');
+                        onClick={async () => {
+                            await logout();
                         }}
                         className="flex items-center gap-2 px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-all border border-red-300"
                     >
@@ -136,6 +171,17 @@ export default function AdminPage() {
             </header>
 
             <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+                {/* Invite Button */}
+                <div className="mb-6 flex justify-end">
+                    <button
+                        onClick={() => setShowInviteModal(true)}
+                        className="inline-flex items-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all font-semibold shadow-lg hover:shadow-xl"
+                    >
+                        <UserPlus className="w-5 h-5" />
+                        Invite New User
+                    </button>
+                </div>
+
                 {allUsers.length === 0 ? (
                     <div className="text-center py-16">
                         <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-blue-100 border border-blue-200 mb-6">
@@ -144,7 +190,14 @@ export default function AdminPage() {
                             </svg>
                         </div>
                         <h2 className="text-2xl font-bold text-slate-900 mb-3">No users registered</h2>
-                        <p className="text-slate-600">Users will appear here once they create accounts</p>
+                        <p className="text-slate-600 mb-6">Invite users to get started</p>
+                        <button
+                            onClick={() => setShowInviteModal(true)}
+                            className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 text-white rounded-lg transition-all font-semibold shadow-lg hover:shadow-xl"
+                        >
+                            <UserPlus className="w-5 h-5" />
+                            Invite First User
+                        </button>
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
@@ -238,6 +291,14 @@ export default function AdminPage() {
                             )}
                         </div>
                     </div>
+                )}
+
+                {/* Invite User Modal */}
+                {showInviteModal && (
+                    <InviteUser
+                        onClose={() => setShowInviteModal(false)}
+                        onInvite={handleInviteUser}
+                    />
                 )}
             </main>
         </div>

@@ -15,13 +15,24 @@ export default function LoginPage() {
 
     // Redirect if already authenticated
     useEffect(() => {
-        if (isAuthenticated && user) {
-            if (user.role === 'admin') {
-                router.push('/admin');
-            } else {
-                router.push('/user');
+        let mounted = true;
+        let redirecting = false;
+
+        if (isAuthenticated && user && !redirecting) {
+            redirecting = true;
+            if (mounted) {
+                if (user.role === 'admin') {
+                    router.push('/admin');
+                } else {
+                    router.push('/user');
+                }
             }
         }
+
+        return () => {
+            mounted = false;
+            redirecting = false;
+        };
     }, [isAuthenticated, user, router]);
 
     const handleGoogleSignIn = async () => {

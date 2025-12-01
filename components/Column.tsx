@@ -32,8 +32,11 @@ export default function Column({
     const columnCards = cards.filter((card) => card.columnId === column.id);
 
     const handleCardClick = (card: CardType) => {
-        setSelectedCard(card);
-        setIsModalOpen(true);
+        // Only admins can edit cards
+        if (isAdmin) {
+            setSelectedCard(card);
+            setIsModalOpen(true);
+        }
     };
 
     const handleAddCard = () => {
@@ -107,19 +110,21 @@ export default function Column({
                 )}
             </Droppable>
 
-            {/* Add Card Button */}
-            <div className="px-4 py-4 border-t border-slate-200 bg-slate-50">
-                <button
-                    onClick={handleAddCard}
-                    className="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold border border-slate-300 hover:border-slate-400"
-                >
-                    <Plus className="w-4 h-4" />
-                    Add Card
-                </button>
-            </div>
+            {/* Add Card Button - Only for Admins */}
+            {isAdmin && (
+                <div className="px-4 py-4 border-t border-slate-200 bg-slate-50">
+                    <button
+                        onClick={handleAddCard}
+                        className="w-full px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 rounded-lg transition-all flex items-center justify-center gap-2 font-semibold border border-slate-300 hover:border-slate-400"
+                    >
+                        <Plus className="w-4 h-4" />
+                        Add Card
+                    </button>
+                </div>
+            )}
 
-            {/* Modal */}
-            {isModalOpen && (
+            {/* Modal - Only for Admins */}
+            {isModalOpen && isAdmin && (
                 <CardModal
                     card={selectedCard}
                     onSave={handleSaveCard}

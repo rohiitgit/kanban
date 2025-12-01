@@ -1,4 +1,5 @@
 import { createClient } from '@/utils/supabase/server';
+import { createAdminClient } from '@/utils/supabase/admin';
 import { redirect } from 'next/navigation';
 
 /**
@@ -22,12 +23,22 @@ export default async function UserLayout({
     redirect('/auth/login');
   }
 
-  // Check if user has the correct role (optional - if role is stored in metadata)
-  const role = user.user_metadata?.role || 'user';
+  // Check profile using admin client to avoid RLS issues
+  const adminClient = createAdminClient();
+  const { data: profile } = await adminClient
+    .from('profiles')
+    .select('role, status')
+    .eq('id', user.id)
+    .maybeSingle();
 
   // Redirect admins to admin dashboard
-  if (role === 'admin') {
+  if (profile && profile.role === 'admin') {
     redirect('/admin');
+  }
+
+  // Check if user is active
+  if (profile && profile.status !== 'active') {
+    redirect('/auth/access-denied?reason=inactive');
   }
 
   // User is authenticated and has user role, render the page

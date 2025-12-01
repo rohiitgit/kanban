@@ -17,9 +17,20 @@ export default function UserPage() {
     const [newBoardTitle, setNewBoardTitle] = useState('');
 
     useEffect(() => {
-        if (!isUser) {
-            router.push('/auth/login');
+        let mounted = true;
+        let redirecting = false;
+
+        if (!isUser && !redirecting) {
+            redirecting = true;
+            if (mounted) {
+                router.push('/auth/login');
+            }
         }
+
+        return () => {
+            mounted = false;
+            redirecting = false;
+        };
     }, [isUser, router]);
 
     useEffect(() => {
@@ -114,9 +125,8 @@ export default function UserPage() {
                         <p className="text-sm text-slate-600 mt-1">Welcome back, {user?.name}</p>
                     </div>
                     <button
-                        onClick={() => {
-                            logout();
-                            router.push('/auth/login');
+                        onClick={async () => {
+                            await logout();
                         }}
                         className="flex items-center gap-2 px-4 py-2.5 bg-red-100 hover:bg-red-200 text-red-700 rounded-lg transition-all border border-red-300"
                     >

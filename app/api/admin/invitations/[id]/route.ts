@@ -123,8 +123,9 @@ export async function PATCH(
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    // Check if user is admin
-    const { data: profile } = await supabase
+    // Check if user is admin (use admin client to avoid RLS recursion)
+    const adminClient = createAdminClient()
+    const { data: profile } = await adminClient
       .from('profiles')
       .select('role')
       .eq('id', user.id)
@@ -162,9 +163,9 @@ export async function PATCH(
     }
 
     // 4. Resend invitation
-    const adminClient = createAdminClient()
+    // (adminClient already created above for role check)
     const { origin } = new URL(request.url)
-    const redirectUrl = `${origin}/auth/set-password`
+    const redirectUrl = `${origin}/auth/callback`
 
     const { error: inviteError } = await adminClient.auth.admin.inviteUserByEmail(
       invitation.email,

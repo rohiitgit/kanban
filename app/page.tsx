@@ -10,9 +10,15 @@ export default async function Home() {
         data: { user },
     } = await supabase.auth.getUser();
 
-    // If user is authenticated, redirect based on role
+    // If user is authenticated, redirect based on role from profiles table
     if (user) {
-        const role = user.user_metadata?.role || 'user';
+        const { data: profile } = await supabase
+            .from('profiles')
+            .select('role')
+            .eq('id', user.id)
+            .maybeSingle();
+
+        const role = profile?.role || 'user';
 
         if (role === 'admin') {
             redirect('/admin');

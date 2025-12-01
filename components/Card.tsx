@@ -56,18 +56,20 @@ export default function Card({ card, index, onClick, onDelete, isAdmin }: CardPr
                     ref={provided.innerRef}
                     {...provided.draggableProps}
                     {...provided.dragHandleProps}
-                    onClick={onClick}
-                    className={`rounded-lg p-4 shadow-sm hover:shadow-md cursor-pointer transition-all border ${colors.bg} ${colors.border} hover:border-blue-300 group bg-white ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500 opacity-95' : ''
-                        }`}
+                    onClick={isAdmin ? onClick : undefined}
+                    className={`rounded-lg p-4 shadow-sm hover:shadow-md transition-all border ${colors.bg} ${colors.border} hover:border-blue-300 group bg-white ${snapshot.isDragging ? 'shadow-lg ring-2 ring-blue-500 opacity-95' : ''} ${isAdmin ? 'cursor-pointer' : 'cursor-grab'}`}
                 >
                     <div className="flex items-start justify-between gap-2">
                         <div className="flex-1 min-w-0">
-                            <h4 className="font-semibold text-slate-900 line-clamp-2 text-sm group-hover:text-blue-600 transition-colors">{card.title}</h4>
+                            <h4 className={`font-semibold text-slate-900 line-clamp-2 text-sm transition-colors ${isAdmin ? 'group-hover:text-blue-600 cursor-pointer' : 'cursor-grab'}`}>
+                                {card.title}
+                            </h4>
                             {card.description && (
                                 <p className="text-xs text-slate-600 line-clamp-2 mt-2">{card.description}</p>
                             )}
                         </div>
-                        {!isAdmin && (
+                        {/* Only admins can delete cards */}
+                        {isAdmin && (
                             <button
                                 onClick={(e) => {
                                     e.stopPropagation();
