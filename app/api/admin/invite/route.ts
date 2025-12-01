@@ -257,9 +257,12 @@ export async function POST(request: Request) {
 
     // 7. Generate invitation link using configured base URL
     // Priority: NEXT_PUBLIC_APP_URL > NEXT_PUBLIC_SITE_URL > fallback to localhost
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL 
+    let baseUrl = process.env.NEXT_PUBLIC_APP_URL 
       || process.env.NEXT_PUBLIC_SITE_URL 
       || 'http://localhost:3000'
+    
+    // Remove trailing slash if present to avoid double slashes
+    baseUrl = baseUrl.replace(/\/$/, '')
     
     const inviteLink = `${baseUrl}/auth/accept-invite?token=${inviteToken}`
 
